@@ -1,0 +1,43 @@
+Cluster,Primary query or intent,Primary page,Supporting pages,Notes
+Brand,Progateway Consultancy,/,/about; /contact,Homepage is the primary entity page
+Brand,Progateway Consultancy Navsari,/,/locations/navsari; /contact,Reinforced by consistent NAP and LocalBusiness schema
+Brand,Suresh Purohit consultant,/about,/,Do not add unverified qualifications
+Local commercial,financial consultant in Navsari,/,/locations/navsari; /services,Primary homepage and local entity intent
+Local commercial,business consultant in Navsari,/,/locations/navsari; /services/company-firm-registration,Homepage explains broad consultancy scope
+Local commercial,accountant in Navsari,/services/accounting,/locations/navsari; /documents-required,Accounting-specific intent
+Local commercial,GST consultant in Navsari,/services/gst,/locations/navsari; /resources/documents-required-gst-registration,Merged registration and filing intent
+Local commercial,tax consultant in Navsari,/services/income-tax,/services/tax-planning; /locations/navsari,Income-tax filing is the primary commercial page
+Local commercial,company registration in Navsari,/services/company-firm-registration,/locations/navsari; /resources/company-registration-process-gujarat,Covers company partnership LLP and firm intent
+Local commercial,loan consultant in Navsari,/services/loans,/services/business-loan; /services/home-loan,No approval guarantee
+Local commercial,FSSAI registration in Navsari,/services/fssai-registration,/locations/navsari; /resources/fssai-registration-licence-requirements,Food-business intent
+Local commercial,trademark registration in Navsari,/services/trademark-registration,/locations/navsari; /resources/trademark-registration-process-india,IP filing intent
+Local commercial,ISO consultant in Navsari,/services/iso-certification,/locations/navsari; /resources/iso-certification-process-small-business,Certification assistance language only
+Local commercial,Import Export Code registration in Navsari,/services/import-export-code,/locations/navsari; /resources/import-export-code-registration-guide,IEC and DGFT intent
+Service area,GST consultant Surat,/locations/surat,/services/gst,Page states service from Navsari office
+Service area,business registration Ahmedabad,/locations/ahmedabad,/services/company-firm-registration,Remote assistance only
+Service area,loan documentation Vadodara,/locations/vadodara,/services/loans,No physical office claim
+Regional,online GST registration assistance Gujarat,/locations/gujarat,/services/gst; /resources/gst-registration-guide-small-business-gujarat,Regional authority through useful content
+India-wide,online company registration assistance India,/services/company-firm-registration,/resources/company-registration-process-gujarat,No mass state/city pages
+India-wide,FSSAI registration assistance India,/services/fssai-registration,/resources/fssai-registration-licence-requirements,Availability depends on case
+India-wide,trademark registration assistance India,/services/trademark-registration,/resources/trademark-registration-process-india,Links to official IP India source
+India-wide,ISO certification assistance India,/services/iso-certification,/resources/iso-certification-process-small-business,No certification guarantee
+India-wide,Import Export Code assistance India,/services/import-export-code,/resources/import-export-code-registration-guide,Links to official DGFT source
+Informational,documents required for GST registration,/resources/documents-required-gst-registration,/services/gst; /documents-required,Checklist intent
+Informational,who needs GST registration,/resources/who-needs-gst-registration,/services/gst,Applicability-focused content
+Informational,GST return filing guide,/resources/gst-return-filing-guide-business-owners,/services/gst,Return process and reconciliation
+Informational,proprietorship vs partnership vs LLP vs private limited,/resources/proprietorship-partnership-llp-private-limited-comparison,/services/company-firm-registration,Structure comparison
+Informational,company registration process in Gujarat,/resources/company-registration-process-gujarat,/services/company-firm-registration,Process intent
+Informational,how long company registration takes,/resources/how-long-company-registration-takes,/services/company-firm-registration,Uses disclaimers rather than guarantees
+Informational,documents required for FSSAI licence,/resources/fssai-registration-licence-requirements,/services/fssai-registration,Licence and registration distinction
+Informational,trademark registration process India,/resources/trademark-registration-process-india,/services/trademark-registration,Official-source links
+Informational,ISO certification process small business,/resources/iso-certification-process-small-business,/services/iso-certification,Preparation and certification process
+Informational,how to apply for Import Export Code,/resources/import-export-code-registration-guide,/services/import-export-code,Official DGFT source
+Informational,documents required for business loan,/resources/documents-required-business-loan,/services/loans; /services/business-loan,Documentation intent
+Informational,personal loan application checklist,/resources/personal-loan-application-checklist,/services/loans; /services/personal-loan,No approval promise
+Informational,income-tax return filing mistakes,/resources/common-income-tax-return-filing-mistakes,/services/income-tax,Helpful error-prevention content
+Informational,tax and compliance calendar Gujarat,/resources/tax-compliance-calendar-gujarat-businesses,/services/gst; /services/income-tax,Dates must be reviewed before relying on them
+Informational,financial planning checklist small business,/resources/financial-planning-checklist-small-business-owners,/services/accounting; /services/investment,Educational rather than personalised advice
+Near me,GST consultant near me,/services/gst,/locations/navsari; Google Business Profile,Optimised semantically and locally without repeating near me
+Near me,tax consultant near me,/services/income-tax,/locations/navsari; Google Business Profile,Depends heavily on proximity prominence and GBP quality
+Near me,accountant near me,/services/accounting,/locations/navsari; Google Business Profile,Accurate address and service entity signals
+Near me,loan agent near me,/services/loans,/locations/navsari; Google Business Profile,Use loan documentation assistance wording
