@@ -1,30 +1,69 @@
 import { spawn } from "node:child_process";
 
 const port = 4177;
-const base = `http://127.0.0.1:${port}`;
+const host = "127.0.0.1";
+const base = `http://${host}:${port}`;
+
 const server = spawn(
-  process.platform === "win32" ? "npm.cmd" : "npm",
-  ["run", "preview", "--", "--port", String(port), "--ip", "127.0.0.1"],
-  { stdio: ["ignore", "pipe", "pipe"], detached: process.platform !== "win32", env: { ...process.env, NO_UPDATE_NOTIFIER: "1" } },
+  process.execPath,
+  [".output/server/index.mjs"],
+  {
+    stdio: ["ignore", "pipe", "pipe"],
+    detached: process.platform !== "win32",
+    env: {
+      ...process.env,
+      PORT: String(port),
+      HOST: host,
+      NITRO_PORT: String(port),
+      NITRO_HOST: host,
+      NO_UPDATE_NOTIFIER: "1",
+    },
+  },
 );
 
 let output = "";
-server.stdout.on("data", (chunk) => { output += chunk.toString(); });
-server.stderr.on("data", (chunk) => { output += chunk.toString(); });
 
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+server.stdout.on("data", (chunk) => {
+  output += chunk.toString();
+});
+
+server.stderr.on("data", (chunk) => {
+  output += chunk.toString();
+});
+
+server.on("error", (error) => {
+  output += `\nFailed to start production server: ${error.message}\n`;
+});
+
+const sleep = (ms) =>
+  new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
 
 async function waitForServer() {
   for (let attempt = 0; attempt < 60; attempt += 1) {
+    if (server.exitCode !== null) {
+      throw new Error(
+        `Production server exited before becoming available.\n${output}`,
+      );
+    }
+
     try {
       const response = await fetch(`${base}/robots.txt`);
-      if (response.ok) return;
+
+      if (response.ok) {
+        return;
+      }
     } catch {
       // Server is still starting.
     }
+
     await sleep(500);
   }
-  throw new Error(`Preview server did not start.\n${output}`);
+
+  throw new Error(
+    `Production server did not start within 30 seconds.\n${output}`,
+  );
 }
 
 const publicRoutes = [
@@ -105,65 +144,213 @@ function countMatches(input, regex) {
   return (input.match(regex) || []).length;
 }
 
+function getMetaDescription(html) {
+  return (
+    html
+      .match(
+        /<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i,
+      )?.[1]
+      ?.trim() ??
+    html
+      .match(
+        /<meta[^>]+content=["']([^"']+)["'][^>]+name=["']description["']/i,
+      )?.[1]
+      ?.trim()
+  );
+}
+
+function getCanonical(html) {
+  return (
+    html
+      .match(
+        /<link[^>]+rel=["']canonical["'][^>]+href=["']([^"']+)["']/i,
+      )?.[1]
+      ?.trim() ??
+    html
+      .match(
+        /<link[^>]+href=["']([^"']+)["'][^>]+rel=["']canonical["']/i,
+      )?.[1]
+      ?.trim()
+  );
+}
+
 try {
   await waitForServer();
+
   const titles = new Map();
   const descriptions = new Map();
   const failures = [];
 
   for (const route of publicRoutes) {
-    const response = await fetch(`${base}${route}`, { redirect: "manual" });
-    const html = await response.text();
-    if (response.status !== 200) failures.push(`${route}: expected 200, received ${response.status}`);
+    try {
+      const response = await fetch(`${base}${route}`, {
+        redirect: "manual",
+      });
 
-    const title = html.match(/<title>(.*?)<\/title>/i)?.[1]?.trim();
-    const description = html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i)?.[1]?.trim()
-      ?? html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']description["']/i)?.[1]?.trim();
-    const canonical = html.match(/<link[^>]+rel=["']canonical["'][^>]+href=["']([^"']+)["']/i)?.[1]
-      ?? html.match(/<link[^>]+href=["']([^"']+)["'][^>]+rel=["']canonical["']/i)?.[1];
-    const h1Count = countMatches(html, /<h1\b/gi);
+      const html = await response.text();
 
-    if (!title) failures.push(`${route}: title missing`);
-    if (!description) failures.push(`${route}: meta description missing`);
-    if (!canonical) failures.push(`${route}: canonical missing`);
-    if (h1Count !== 1) failures.push(`${route}: expected one H1, found ${h1Count}`);
+      if (response.status !== 200) {
+        failures.push(
+          `${route}: expected 200, received ${response.status}`,
+        );
+      }
 
-    if (title) {
-      if (titles.has(title)) failures.push(`${route}: duplicate title also used by ${titles.get(title)}`);
-      else titles.set(title, route);
-    }
-    if (description) {
-      if (descriptions.has(description)) failures.push(`${route}: duplicate description also used by ${descriptions.get(description)}`);
-      else descriptions.set(description, route);
+      const title = html.match(/<title>(.*?)<\/title>/is)?.[1]?.trim();
+      const description = getMetaDescription(html);
+      const canonical = getCanonical(html);
+      const h1Count = countMatches(html, /<h1\b/gi);
+
+      if (!title) {
+        failures.push(`${route}: title missing`);
+      }
+
+      if (!description) {
+        failures.push(`${route}: meta description missing`);
+      }
+
+      if (!canonical) {
+        failures.push(`${route}: canonical missing`);
+      }
+
+      if (h1Count !== 1) {
+        failures.push(
+          `${route}: expected one H1, found ${h1Count}`,
+        );
+      }
+
+      if (title) {
+        if (titles.has(title)) {
+          failures.push(
+            `${route}: duplicate title also used by ${titles.get(title)}`,
+          );
+        } else {
+          titles.set(title, route);
+        }
+      }
+
+      if (description) {
+        if (descriptions.has(description)) {
+          failures.push(
+            `${route}: duplicate description also used by ${descriptions.get(
+              description,
+            )}`,
+          );
+        } else {
+          descriptions.set(description, route);
+        }
+      }
+    } catch (error) {
+      failures.push(
+        `${route}: request failed — ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
     }
   }
 
   for (const [from, to] of Object.entries(redirects)) {
-    const response = await fetch(`${base}${from}`, { redirect: "manual" });
-    const location = response.headers.get("location") || "";
-    if (![301, 308].includes(response.status)) failures.push(`${from}: expected permanent redirect, received ${response.status}`);
-    if (!location.endsWith(to)) failures.push(`${from}: expected Location ending ${to}, received ${location || "none"}`);
+    try {
+      const response = await fetch(`${base}${from}`, {
+        redirect: "manual",
+      });
+
+      const location = response.headers.get("location") || "";
+
+      if (![301, 308].includes(response.status)) {
+        failures.push(
+          `${from}: expected permanent redirect, received ${response.status}`,
+        );
+      }
+
+      if (!location.endsWith(to)) {
+        failures.push(
+          `${from}: expected Location ending ${to}, received ${
+            location || "none"
+          }`,
+        );
+      }
+    } catch (error) {
+      failures.push(
+        `${from}: redirect request failed — ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
   }
 
-  for (const route of ["/sitemap.xml", "/image-sitemap.xml", "/robots.txt"]) {
-    const response = await fetch(`${base}${route}`);
-    const body = await response.text();
-    if (response.status !== 200 || !body.trim()) failures.push(`${route}: endpoint unavailable`);
+  for (const route of [
+    "/sitemap.xml",
+    "/image-sitemap.xml",
+    "/robots.txt",
+  ]) {
+    try {
+      const response = await fetch(`${base}${route}`);
+      const body = await response.text();
+
+      if (response.status !== 200 || !body.trim()) {
+        failures.push(`${route}: endpoint unavailable`);
+      }
+    } catch (error) {
+      failures.push(
+        `${route}: endpoint request failed — ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
   }
 
-  const missing = await fetch(`${base}/this-page-does-not-exist`, { redirect: "manual" });
-  if (missing.status !== 404) failures.push(`/this-page-does-not-exist: expected 404, received ${missing.status}`);
+  try {
+    const missing = await fetch(
+      `${base}/this-page-does-not-exist`,
+      {
+        redirect: "manual",
+      },
+    );
 
-  if (failures.length) {
-    console.error(`Production smoke test failed with ${failures.length} issue(s):`);
-    for (const failure of failures) console.error(`- ${failure}`);
+    if (missing.status !== 404) {
+      failures.push(
+        `/this-page-does-not-exist: expected 404, received ${missing.status}`,
+      );
+    }
+  } catch (error) {
+    failures.push(
+      `/this-page-does-not-exist: request failed — ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    );
+  }
+
+  if (failures.length > 0) {
+    console.error(
+      `Production smoke test failed with ${failures.length} issue(s):`,
+    );
+
+    for (const failure of failures) {
+      console.error(`- ${failure}`);
+    }
+
     process.exitCode = 1;
   } else {
-    console.log(`Production smoke test passed for ${publicRoutes.length} indexable pages, ${Object.keys(redirects).length} redirects, XML/text endpoints, and the 404 response.`);
+    console.log(
+      `Production smoke test passed for ${publicRoutes.length} indexable pages, ${Object.keys(redirects).length} redirects, XML/text endpoints, and the 404 response.`,
+    );
   }
 } finally {
   if (process.platform === "win32") {
-    spawn("taskkill", ["/pid", String(server.pid), "/t", "/f"], { stdio: "ignore" });
+    if (server.pid) {
+      const taskkill = spawn(
+        "taskkill",
+        ["/pid", String(server.pid), "/t", "/f"],
+        {
+          stdio: "ignore",
+        },
+      );
+
+      await new Promise((resolve) => {
+        taskkill.on("close", resolve);
+        taskkill.on("error", resolve);
+      });
+    }
   } else if (server.pid) {
     try {
       process.kill(-server.pid, "SIGTERM");
@@ -171,5 +358,6 @@ try {
       server.kill("SIGTERM");
     }
   }
+
   await sleep(300);
 }
